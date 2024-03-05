@@ -1,0 +1,173 @@
+import "./style.css";
+import * as THREE from "three";
+
+// 引入轨道控制器
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+
+// 引入dat.gui
+import * as dat from "dat.gui";
+
+let scene, camera, renderer;
+let controls;
+let cube;
+
+// 初始化加载场景与摄像机
+function init() {
+  scene = new THREE.Scene();
+
+  camera = new THREE.PerspectiveCamera(
+    75,
+    window.innerWidth / window.innerHeight,
+    0.1,
+    1000
+  );
+
+  renderer = new THREE.WebGLRenderer({
+    // 开启抗锯齿
+    antialias: true,
+  });
+
+  renderer.setSize(window.innerWidth, window.innerHeight);
+
+  document.body.append(renderer.domElement);
+}
+
+// 1.创建立方体
+function createCube() {
+  const geometry = new THREE.BoxGeometry(1, 1, 1);
+  const material = new THREE.MeshBasicMaterial({ color: 0x20a0ff });
+
+  cube = new THREE.Mesh(geometry, material);
+
+  camera.position.z = 5;
+
+  scene.add(cube);
+}
+
+// 创建轨道控制器
+function createControls() {
+  controls = new OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+  // 自动旋转
+  // controls.autoRotate = true;
+  // 设置自动旋转速度
+  // controls.autoRotateSpeed = 10.0;
+  // 设置垂直旋转上限
+  // controls.maxPolarAngle = Math.PI;
+  // 设置垂直旋转角度的下限
+  // controls.minPolarAngle = 1.5;
+  // 设置水平旋转角度的上限
+  // controls.maxAzimuthAngle = 1.5 * Math.PI;
+  // 设置水平旋转角度的下限
+  // controls.minAzimuthAngle = 0.5 * Math.PI;
+  // 设置摄像机向外移动的距离
+  // controls.maxDistance = 10;
+  // 设置摄像机向内移动的距离
+  // controls.minDistance = 3;
+}
+
+// 在循环渲染中更新场景
+function renderLoop() {
+  // 循环渲染(根据当前计算机浏览器刷新帧率,(默认60次 / 秒), 不断调用此函数渲染最新画面状态, )
+  // 好处是: 当前页面切换到后台, 暂停递归
+  requestAnimationFrame(renderLoop);
+
+  // 在x轴进行旋转
+  // cube.rotation.x += 0.1;
+
+  //   更新(手动js代码更新摄像机信息,必须调用轨道控制器 update 方法)
+  controls.update();
+
+  // 传入场景与摄像机, 并渲染到画面
+  renderer.render(scene, camera);
+}
+
+// 创建辅助坐标轴
+function createHelper() {
+  const axesHelper = new THREE.AxesHelper(10);
+  //   将坐标轴添加到场景中
+  scene.add(axesHelper);
+}
+
+// 创建适配方法
+function renderResize() {
+  window.addEventListener("resize", (e) => {
+    // 重新设置画布大小
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    // 重新设置摄像机宽高比
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+  });
+}
+
+// 移动物体
+function moveCube() {
+  // 在x轴进行移动
+  cube.position.x = 5;
+  // 在y轴进行移动
+  // cube.position.y = 1;
+  // 设置物体缩放
+  // cube.scale.z = 3;
+}
+
+// 创建gui工具
+function createGUI() {
+  // 创建gui对象
+  const gui = new dat.GUI();
+  // 添加具体控制器
+  // 添加标题
+  gui.add(document, "title");
+  // 控制物体显示隐藏
+  gui.add(cube, "visible");
+  // 重置控制器
+  gui.add(controls, "reset");
+  // 设置颜色
+  const colorObj = {
+    col: `#${cube.material.color.getHexString()}`,
+  };
+  gui.addColor(colorObj, "col").onChange((val) => {
+    // cube.material.color.set(val);
+    cube.material.color = new THREE.Color(val);
+  });
+
+  // 添加分组
+  const groub = gui.addFolder("位移");
+  groub.add(cube.position, "x", 0, 5, 0.1);
+  groub.add(cube.position, "y", 0, 5, 0.1);
+  groub.add(cube.position, "z", 0, 5, 0.1);
+
+  // 添加方案
+  gui
+    .add({ type: "1" }, "type", { 方案一: "1", 方案二: "2" })
+    .onChange((val) => {
+      switch (val) {
+        case "1":
+          cube.position.set(0, 0, 0);
+          break;
+
+        case "2":
+          cube.position.set(2, 2, 2);
+          break;
+      }
+    });
+}
+
+init();
+createCube();
+
+createControls();
+
+// 调用坐标轴方法
+createHelper();
+
+// 调用移动物体方法
+moveCube();
+
+// 调用在循环渲染中更新场景方法
+renderLoop();
+
+// 调用gui
+createGUI();
+
+//适配方法，浏览器发生变化时，画布大小跟随浏览器变化而变化
+renderResize();

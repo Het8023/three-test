@@ -1,0 +1,240 @@
+import * as THREE from "three";
+import "./style.css";
+
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+// 引入性能监视器的stats组件
+import Stats from "three/examples/jsm/libs/stats.module.js";
+
+let scene, camera, renderer;
+let cube;
+let controls;
+// 创建性能监视器全局变量并实例化
+let stats = new Stats();
+// 创建分组
+let group;
+
+function init() {
+  scene = new THREE.Scene();
+
+  camera = new THREE.PerspectiveCamera(
+    75,
+    window.innerWidth / window.innerHeight,
+    0.1,
+    1000
+  );
+
+  camera.position.z = 10;
+
+  renderer = new THREE.WebGLRenderer({ antialias: true });
+
+  renderer.setSize(window.innerWidth, window.innerHeight);
+
+  document.body.append(renderer.domElement);
+}
+
+// 创建分组
+function createGroup() {
+  group = new THREE.Group();
+}
+
+function createCube() {
+  // 创建一个数组，保存多个立方体数据
+  const cubeInfoArr = [];
+
+  for (let i = 0; i < 1; i++) {
+    // 生成一个随机0-255的数字
+    // let random = Math.floor(Math.random() * (255 - 0 + 1) + 0);
+    const obj = {
+      color: `rgb(${Math.floor(
+        Math.random() * (255 - 0 + 1) + 0
+      )}, ${Math.floor(Math.random() * (255 - 0 + 1) + 0)}, ${Math.floor(
+        Math.random() * (255 - 0 + 1) + 0
+      )})`,
+      w: Math.floor(Math.random() * (3 - 1 + 1) + 1),
+      h: Math.floor(Math.random() * (3 - 1 + 1) + 1),
+      d: Math.floor(Math.random() * (3 - 1 + 1) + 1),
+      x: Math.floor(Math.random() * (5 - -5 + 1) + -5),
+      y: Math.floor(Math.random() * (5 - -5 + 1) + -5),
+      z: Math.floor(Math.random() * (5 - -5 + 1) + -5),
+    };
+    cubeInfoArr.push(obj);
+  }
+
+  cubeInfoArr.map((item) => {
+    // 创建图形
+    const geometry = new THREE.BoxGeometry(item.w, item.h, item.d);
+    // 创建材质
+    const material = new THREE.MeshBasicMaterial({
+      color: item.color,
+    });
+    // 创建物体网格对象，并且图形与材质加载到物体网格对象中
+    cube = new THREE.Mesh(geometry, material);
+    // 设置立方体的坐标
+    cube.position.set(item.x, item.y, item.z);
+
+    // 给绘制的立方体添加名字
+    cube.name = "cn";
+
+    // 将立方体添加到分组中
+    group.add(cube);
+  });
+  // 将分组添加到场景中
+  scene.add(group);
+
+  // 创建图形
+  // const geometry = new THREE.BoxGeometry(1, 1, 1);
+  // // 创建材质
+  // const material = new THREE.MeshBasicMaterial({ color: 0x20a0ff });
+  // cube = new THREE.Mesh(geometry, material);
+
+  // const geometry1 = new THREE.BoxGeometry(1, 1, 1);
+  // // 创建材质
+  // const material1 = new THREE.MeshBasicMaterial({ color: 0x20a0ff });
+  // cube1 = new THREE.Mesh(geometry1, material1);
+  // scene.add(cube1);
+
+  // scene.add(cube);
+}
+
+// 创建圆形缓冲几何体
+function createCircle() {
+  // 创建图形
+  // radius — 圆形的半径，默认值为1
+  // segments — 分段（三角面）的数量，最小值为3，默认值为32。
+  const geometry = new THREE.CircleGeometry(5, 32);
+  // 创建材质
+  const material = new THREE.MeshBasicMaterial({
+    color: 0xffff00,
+    side: THREE.DoubleSide,
+  });
+  // 创建网格对象并渲染
+  const circle = new THREE.Mesh(geometry, material);
+  circle.position.set(-10, -10, -10);
+  // 将物体添加到场景
+  scene.add(circle);
+}
+
+// 创建球形缓冲几何体
+function createSphere() {
+  const geometry = new THREE.SphereGeometry(3, 32, 16);
+  const material = new THREE.MeshBasicMaterial({ color: 0xff6600 });
+  const sphere = new THREE.Mesh(geometry, material);
+  sphere.position.set(10, 10, 10);
+  scene.add(sphere);
+}
+
+// 测试
+function createPlane() {
+  const x = 0,
+    y = 0;
+
+  const heartShape = new THREE.Shape();
+
+  heartShape.moveTo(x + 5, y + 5);
+  heartShape.bezierCurveTo(x + 5, y + 5, x + 4, y, x, y);
+  heartShape.bezierCurveTo(x - 6, y, x - 6, y + 7, x - 6, y + 7);
+  heartShape.bezierCurveTo(x - 6, y + 11, x - 3, y + 15.4, x + 5, y + 19);
+  heartShape.bezierCurveTo(x + 12, y + 15.4, x + 16, y + 11, x + 16, y + 7);
+  heartShape.bezierCurveTo(x + 16, y + 7, x + 16, y, x + 10, y);
+  heartShape.bezierCurveTo(x + 7, y, x + 5, y + 5, x + 5, y + 5);
+
+  const geometry = new THREE.ShapeGeometry(heartShape);
+  const material = new THREE.MeshBasicMaterial({
+    color: 0xffff00,
+    side: THREE.DoubleSide,
+  });
+  const mesh = new THREE.Mesh(geometry, material);
+  scene.add(mesh);
+}
+
+function createControl() {
+  controls = new OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+}
+
+function renderLoop() {
+  requestAnimationFrame(renderLoop);
+  controls.update();
+  // 手动更新性能监视器
+  stats.update();
+  renderer.render(scene, camera);
+}
+
+// 创建坐标轴
+function createHelper() {
+  const axesHelper = new THREE.AxesHelper(20);
+  scene.add(axesHelper);
+}
+
+// 创建场景适配方法
+function renderResize() {
+  window.addEventListener("resize", () => {
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+  });
+}
+
+// 创建性能监视器
+function createStats() {
+  // 实例化性能监视器
+  // 设置监视器面板类型
+  stats.setMode(0);
+  // 设置监视器位置
+  stats.domElement.position = "fixed";
+  // 设置监视器位置
+  stats.domElement.style.left = "0";
+  // 设置监视器位置
+  stats.domElement.style.top = "0";
+  document.body.appendChild(stats.domElement);
+}
+
+// 创建删除立方体方法
+function removeCube() {
+  window.addEventListener("dblclick", () => {
+    // 单个删除
+    // const arr = scene.children.filter((item) => item.name == "cn");
+    // const c = arr[0];
+    // if (c) {
+    //   if (arr.length == 1) return;
+    //   c.geometry.dispose();
+    //   c.material.dispose();
+    //   scene.remove(c);
+    // }
+    // 分组删除
+    group.children.map((item) => {
+      // 从内存中删除图形
+      item.geometry.dispose();
+      item.material.dispose();
+    });
+    // 从场景中移除组
+    scene.remove(group);
+  });
+}
+
+init();
+// 调用创建物体方法
+createGroup();
+// 创建物体
+createCube();
+
+// 测试
+// createPlane();
+
+// 创建球形缓冲几何体
+createSphere();
+
+// 创建圆形缓冲几何体
+createCircle();
+// 创建轨道控制器
+createControl();
+// 创建坐标轴
+createHelper();
+// 性能监视器
+createStats();
+// 循环渲染
+renderLoop();
+// 删除立方体
+removeCube();
+// 3d场景适配方法
+renderResize();
