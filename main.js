@@ -5,7 +5,14 @@ import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 // 引入性能监视器的stats组件
 import Stats from "three/examples/jsm/libs/stats.module.js";
 
-let scene, camera, renderer;
+// 引入3d转换器与渲染器
+import {
+  CSS3DObject,
+  CSS3DRenderer,
+} from "three/addons/renderers/CSS3DRenderer.js";
+
+// 创建场景，摄像机，渲染器，css3d渲染器
+let scene, camera, renderer, labelRenderer;
 let cube;
 let controls;
 // 创建性能监视器全局变量并实例化
@@ -23,6 +30,7 @@ function init() {
     1000
   );
 
+  // 调整摄像机到盒子中间
   camera.position.z = 10;
 
   renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -125,8 +133,31 @@ function createSphere() {
   scene.add(sphere);
 }
 
-// 创建线物体和材质
+// 创建一条连续的线
 function createLine() {
+  const points = [];
+  // 每一个点的x,y,z轴的坐标
+  points.push(new THREE.Vector3(-5, 10, 0));
+  points.push(new THREE.Vector3(0, 10, 0));
+  points.push(new THREE.Vector3(0, 15, 5));
+  points.push(new THREE.Vector3(5, 15, 0));
+  // 创建图形
+  const geometry = new THREE.BufferGeometry().setFromPoints(points);
+  // 创建材质
+  const material = new THREE.LineBasicMaterial({ color: 0xff6600 });
+  // 创建线物体
+  // 一条连续的线
+  // const line = new THREE.Line(geometry, material);
+  // 首尾相连的线
+  // const line = new THREE.LineLoop(geometry, material);
+  // 若干个定点之前绘制成一条线
+  const line = new THREE.LineSegments(geometry, material);
+  // 添加到场景
+  scene.add(line);
+}
+
+// 创建线物体和材质
+function createLine1() {
   const geometry = new THREE.SphereGeometry(3, 32, 16);
   // 创建材质（点材质）
   const material = new THREE.LineBasicMaterial({
@@ -163,17 +194,158 @@ function createPlane() {
   scene.add(mesh);
 }
 
-function createControl() {
-  controls = new OrbitControls(camera, renderer.domElement);
-  controls.enableDamping = true;
+// 创建球形缓冲几何体，并且进行全景贴图
+function createMap() {
+  // 创建图形
+  const geometry = new THREE.SphereGeometry(3, 32, 16);
+  // 创建纹理加载器
+  // new THREE.TextureLoader().setPath()设置公共路径
+  const texture = new THREE.TextureLoader().load("image/earth/earth.png");
+  // 创建材质
+  const material = new THREE.MeshBasicMaterial({
+    map: texture,
+    side: THREE.DoubleSide,
+  });
+  // 创建物体
+  const sphere = new THREE.Mesh(geometry, material);
+  // 调整立方体沿着z轴做-1缩小（镜面翻转）
+  // sphere.scale.set(1, 1, -1);
+  // 创建场景
+  scene.add(sphere);
 }
 
+// 创建立方体缓冲体并进行贴图
+function createCubeAndImage() {
+  // 图片路径
+  // 顺序是 x前后 y前后 z前后
+  const imgUrlArr = [
+    "posx.jpg",
+    "negx.jpg",
+    "posy.jpg",
+    "negy.jpg",
+    "posz.jpg",
+    "negz.jpg",
+  ];
+  // 创建图形
+  const geometry = new THREE.BoxGeometry(1, 1, 1);
+  // 使用纹理加载器加载图片
+  const TextureLoader = new THREE.TextureLoader();
+  TextureLoader.setPath("image/park/"); //设置公共的资源路径
+  const materialArr = imgUrlArr.map((item) => {
+    const texture = TextureLoader.load(item);
+
+    // three.js颜色通道为rgb颜色（为了防止图片太浅）
+    texture.colorSpace = THREE.SRGBColorSpace;
+
+    // 创建材质
+    return new THREE.MeshBasicMaterial({
+      map: texture,
+      side: THREE.DoubleSide,
+    });
+  });
+
+  // 创建物体
+  cube = new THREE.Mesh(geometry, materialArr);
+
+  // 调整立方体沿着z轴做-1缩小（镜面翻转）
+  cube.scale.set(1, 1, -1);
+
+  // 添加到场景
+  scene.add(cube);
+}
+
+// 创建平面网格物体 并将视频进行加载
+function createPlaneMap() {
+  // 创建图形
+  const geometry = new THREE.PlaneGeometry(2, 2);
+
+  // 准备视频标签
+  const video = document.createElement("video");
+  video.src = "video/mouse_cat.mp4";
+  video.muted = true; //静音
+  video.addEventListener("loadedmetadata", () => {
+    // 加载视频完成 开始播放
+    video.play();
+  });
+  // 创建视频纹理对象
+  const texture = new THREE.VideoTexture(video);
+  // 把视频贴到材质上
+
+  // 创建材质
+  const material = new THREE.MeshBasicMaterial({
+    map: texture,
+  });
+  // 创建物体
+  const plane = new THREE.Mesh(geometry, material);
+  plane.position.set(0, 0, 5);
+  // 添加到场景
+  scene.add(plane);
+
+  // 点击按钮-》播放视频
+  // const button1 = document.createElement("button");
+  // button1.innerText = "播放视频";
+  // button1.style.position = "fixed";
+  // button1.style.left = "200px";
+  // button1.style.top = "0";
+  // document.body.appendChild(button1);
+  // button1.addEventListener("click", () => {
+  //   video.play(); //播放视频
+  // });
+
+  // 点击按钮-》播放声音
+  const button = document.createElement("button");
+  button.innerText = "播放声音";
+  button.style.position = "fixed";
+  button.style.left = "100px";
+  button.style.top = "0";
+  document.body.appendChild(button);
+  button.addEventListener("click", () => {
+    video.muted = !video.muted; //关闭静音
+  });
+}
+
+// 把原生DOM添加到3D场景中展示
+function domTo3D() {
+  // 1.准备dom标签和内容样式
+  const span = document.createElement("span");
+  span.innerHTML = "我是迪迦";
+  span.style.color = "white";
+
+  // 2.将2d转换为3d
+  const tag3D = new CSS3DObject(span);
+  tag3D.scale.set(1 / 16, 1 / 16, 1 / 16);
+  scene.add(tag3D);
+
+  // 3.通过3d渲染器渲染到浏览器
+  labelRenderer = new CSS3DRenderer();
+  labelRenderer.setSize(window.innerWidth, window.innerHeight);
+  labelRenderer.domElement.style.pointerEvents = "none"; //在什么条件下触发鼠标
+  labelRenderer.domElement.style.position = "fixed";
+  labelRenderer.domElement.style.left = "200px";
+  labelRenderer.domElement.style.top = 0;
+  document.body.appendChild(labelRenderer.domElement);
+}
+
+// 轨道控制器
+function createControl() {
+  controls = new OrbitControls(camera, renderer.domElement);
+  // 开启阻尼效果
+  controls.enableDamping = true;
+
+  // 设置摄像机向外移动的距离
+  // controls.maxDistance = 0.1;
+  // 设置摄像机向内移动的距离
+  // controls.minDistance = 0.1;
+}
+
+// 循环渲染
 function renderLoop() {
   requestAnimationFrame(renderLoop);
   controls.update();
   // 手动更新性能监视器
   stats.update();
   renderer.render(scene, camera);
+  labelRenderer.render(scene, camera);
 }
 
 // 创建坐标轴
@@ -236,15 +408,30 @@ createCube();
 
 // 测试
 // createPlane();
+// 创建一条线
+createLine();
 
 // 创建线物体
-createLine();
+createLine1();
 
 // 创建球形缓冲几何体
 createSphere();
 
 // 创建圆形缓冲几何体
 createCircle();
+
+// 地图贴图
+createMap();
+
+// 全景公园
+createCubeAndImage();
+
+// 创建电视机平面网格物体
+createPlaneMap();
+
+// 原生dom3d展示
+// domTo3D();
+
 // 创建轨道控制器
 createControl();
 // 创建坐标轴
