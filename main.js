@@ -118,6 +118,7 @@ function createCircle() {
   // 创建网格对象并渲染
   const circle = new THREE.Mesh(geometry, material);
   circle.position.set(-10, -10, -10);
+  circle.name = "circle";
   // 将物体添加到场景
   scene.add(circle);
 }
@@ -326,6 +327,54 @@ function domTo3D() {
   document.body.appendChild(labelRenderer.domElement);
 }
 
+// 将原生dom转换并渲染到3d场景中，并且给原生dom添加点击事件
+function domTo3DCopy() {
+  const tag = document.createElement("div");
+  tag.innerHTML = "前进";
+  tag.style.color = "#fff";
+  tag.style.cursor = "pointer";
+  tag.className = "custom-text";
+  tag.addEventListener("click", () => {
+    alert("123");
+  });
+
+  // 将2d转换为3d
+  const tag3D = new CSS3DObject(tag);
+  tag3D.scale.set(1 / 40, 1 / 40, 1 / 40);
+  scene.add(tag3D);
+
+  // 将3d文本场景渲染到3d
+  labelRenderer = new CSS3DRenderer();
+  labelRenderer.setSize(window.innerWidth, window.innerHeight);
+  labelRenderer.domElement.style.pointerEvents = "none";
+  labelRenderer.domElement.style.position = "fixed";
+  labelRenderer.domElement.style.left = "400px";
+  labelRenderer.domElement.style.top = "0";
+  document.body.appendChild(labelRenderer.domElement);
+}
+
+// 实现3d物体添加事件
+function bindClick() {
+  // 1.先给window绑定事件
+  window.addEventListener("click", (event) => {
+    const raycaster = new THREE.Raycaster();
+    const pointer = new THREE.Vector2();
+
+    // 将鼠标位置归一化为设备坐标。x 和 y 方向的取值范围是 (-1 to +1)
+    pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
+    pointer.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    raycaster.setFromCamera(pointer, camera);
+
+    // 获取这条线穿过了哪些物体，收集成一个数组
+    const list = raycaster.intersectObjects(scene.children);
+    console.log(list);
+    const a = list.find((item) => item.object.name == "circle");
+    if (a) {
+      alert("555");
+    }
+  });
+}
+
 // 轨道控制器
 function createControl() {
   controls = new OrbitControls(camera, renderer.domElement);
@@ -431,6 +480,8 @@ createPlaneMap();
 
 // 原生dom3d展示
 // domTo3D();
+domTo3DCopy();
+bindClick();
 
 // 创建轨道控制器
 createControl();
